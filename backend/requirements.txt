@@ -9,7 +9,7 @@ python-multipart==0.0.6
 # Database
 sqlalchemy[asyncio]==2.0.25
 asyncpg==0.29.0
-alembic==1.13.1
+alembic==1.17.2
 pgvector==0.2.4
 
 # Validation
