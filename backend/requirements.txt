@@ -23,7 +23,7 @@ passlib[bcrypt]==1.7.4
 
 # Task Queue
 celery[redis]==5.3.6
-redis==5.0.1
+redis==7.1.0
 
 # AI/ML
 langgraph==0.0.48
