@@ -47,13 +47,16 @@ jobs:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
         JWT_SECRET: benchmark-secret-key-min-32-chars
       run: |
-        python scripts/benchmark.py
+        cd backend
+        python ../scripts/benchmark.py
     
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: benchmark-results
         path: docs/benchmark_results.json
+        if-no-files-found: warn
     
     - name: Comment PR with results
       if: github.event_name == 'pull_request'

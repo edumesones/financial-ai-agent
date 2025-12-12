@@ -169,11 +169,11 @@ jobs:
     
     - name: Test Docker Compose
       run: |
-        docker-compose config
-        docker-compose up -d db redis
+        docker compose config
+        docker compose up -d db redis
         sleep 5
-        docker-compose ps
-        docker-compose down
+        docker compose ps
+        docker compose down
 
   build-frontend:
     name: Build Frontend
