@@ -1,0 +1,81 @@
+name: Performance Benchmarks
+
+on:
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  benchmark:
+    name: Run Performance Benchmarks
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: bench_user
+          POSTGRES_PASSWORD: bench_pass
+          POSTGRES_DB: bench_db
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+    
+    - name: Run benchmarks
+      env:
+        DATABASE_URL: postgresql+asyncpg://bench_user:bench_pass@localhost:5432/bench_db
+        REDIS_URL: redis://localhost:6379/0
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        JWT_SECRET: benchmark-secret-key-min-32-chars
+      run: |
+        python scripts/benchmark.py
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results
+        path: docs/benchmark_results.json
+    
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const results = JSON.parse(fs.readFileSync('docs/benchmark_results.json', 'utf8'));
+          
+          const comment = `## 📊 Performance Benchmark Results
+          
+          **Classification (p95)**: ${results.classification.p95.toFixed(3)}s
+          **Embeddings (p95)**: ${results.embeddings.p95.toFixed(3)}s
+          **Cost per classification**: $${results.costs.per_classification.toFixed(6)}
+          
+          Full results available in artifacts.
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+

@@ -1,0 +1,80 @@
+# docker-compose.yml
+# Infraestructura: PostgreSQL + pgvector + Redis
+#
+# Uso:
+#   docker-compose up -d          # Levantar servicios
+#   docker-compose down           # Parar servicios
+#   docker-compose down -v        # Parar y eliminar volúmenes
+
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: gestoria_postgres
+    environment:
+      POSTGRES_USER: agente
+      POSTGRES_PASSWORD: agente_dev
+      POSTGRES_DB: agente_financiero
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agente -d agente_financiero"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: gestoria_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: gestoria_redis_ui
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    profiles:
+      - tools
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: gestoria_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    name: gestoria_postgres_data
+  redis_data:
+    name: gestoria_redis_data
+
+networks:
+  default:
+    name: gestoria_network
