@@ -1,4 +1,17 @@
- de fecha."""
+"""
+Tests para los parsers de extractos bancarios.
+"""
+from datetime import date
+from decimal import Decimal
+from app.services.parsers import CSVGenericParser, OFXParser
+from app.schemas.transaccion import TransaccionRaw
+
+
+class TestCSVGenericParser:
+    """Tests para CSVGenericParser."""
+    
+    def test_parse_date(self):
+        """Test parsing de diferentes formatos de fecha."""
         parser = CSVGenericParser()
         
         assert parser.parse_date("15/01/2024") == date(2024, 1, 15)
@@ -36,8 +49,6 @@ class TestOFXParser:
     
     def test_detect_ofx(self):
         """Test detección de formato OFX."""
-        from app.services.parsers import OFXParser
-        
         parser = OFXParser()
         
         ofx_content = b"OFXHEADER:100\nDATA:OFXSGML"
